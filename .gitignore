@@ -1,0 +1,6 @@
+# .gitignore
+.env
+config/service-account-key.json
+venv/
+__pycache__
+*.pyc

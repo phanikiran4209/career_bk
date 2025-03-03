@@ -1,0 +1,12 @@
+flask
+pymongo
+python-dotenv
+flask-jwt-extended
+bcrypt
+flask-cors
+python-multipart
+PyMuPDF
+firebase-admin
+datetime
+os
+sendgrid 
