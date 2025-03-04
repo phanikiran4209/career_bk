@@ -6,7 +6,10 @@ bcrypt
 flask-cors
 python-multipart
 PyMuPDF
-firebase-admin
-datetime
-os
-sendgrid 
+sendgrid
+flask
+flask-jwt-extended
+pymongo
+pandas
+numpy
+scikit-learn
