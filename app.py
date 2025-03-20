@@ -21,7 +21,6 @@ app.register_blueprint(profile_bp, url_prefix='/profile')
 app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
 app.register_blueprint(assessment_bp, url_prefix='/assessment')
 app.register_blueprint(admin_bp, url_prefix='/admin')
-app.register_blueprint(prediction_bp, url_prefix='/prediction')  # Register the new prediction blueprint
-
+app.register_blueprint(prediction_bp, url_prefix='/prediction')
 if __name__ == '__main__':
     app.run(debug=True)

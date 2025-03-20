@@ -1,4 +1,3 @@
-# apis/profile.py
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db
@@ -9,7 +8,11 @@ profile_bp = Blueprint('profile', __name__)
 @profile_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_profile():
-    username = get_jwt_identity()
+    identity = get_jwt_identity()
+    username = identity.get('username') if isinstance(identity, dict) else identity
+    
+    if not username:
+        return jsonify({'message': 'Invalid token identity'}), 401
 
     if not request.content_type.startswith('multipart/form-data'):
         return jsonify({'message': 'Content-Type must be multipart/form-data'}), 400
@@ -51,20 +54,27 @@ def create_profile():
         'skills': skills,
         'achievements': achievements,
         'profile_photo': profile_photo_data,
-        'certificates': certificates_data
+        'certificates': certificates_data,
+        'profile_completed': True  # Mark profile as completed
     }
     profile = {k: v for k, v in profile.items() if v is not None}
 
     db.profiles.update_one({'username': username}, {'$set': profile}, upsert=True)
-    return jsonify({'message': 'Profile created/updated successfully', 'status': 'success'}), 200
+    
+    return jsonify({'message': 'Profile created/updated successfully', 'status': 'success', 'redirect': 'dashboard'}), 200
 
 @profile_bp.route('/get', methods=['GET'])
 @jwt_required()
 def get_profile():
-    username = get_jwt_identity()
+    identity = get_jwt_identity()
+    username = identity.get('username') if isinstance(identity, dict) else identity
+    
+    if not username:
+        return jsonify({'message': 'Invalid token identity'}), 401
+
     profile = db.profiles.find_one({'username': username})
     if not profile:
-        return jsonify({'message': 'Profile not found', 'exists': False}), 404
+        return jsonify({'message': 'Profile not found', 'exists': False, 'redirect': 'profile'}), 404
 
     profile_data = {
         'username': profile['username'],
@@ -74,6 +84,8 @@ def get_profile():
         'achievements': profile.get('achievements', []),
         'has_resume': 'resume' in profile,
         'has_profile_photo': 'profile_photo' in profile,
-        'certificates': [{'name': cert['name']} for cert in profile.get('certificates', [])]
+        'certificates': [{'name': cert['name']} for cert in profile.get('certificates', [])],
+        'profile_completed': profile.get('profile_completed', False)
     }
-    return jsonify({'profile': profile_data, 'exists': True}), 200
+
+    return jsonify({'profile': profile_data, 'exists': True, 'redirect': 'dashboard' if profile_data['profile_completed'] else 'profile'}), 200
