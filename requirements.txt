@@ -13,3 +13,12 @@ pymongo
 pandas
 numpy
 scikit-learn
+SpeechRecognition
+PyAudio
+pydub
+fpdf
+openai
+pdfplumber 
+google-generativeai 
+fastapi 
+uvicorn
