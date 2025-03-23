@@ -22,3 +22,5 @@ pdfplumber
 google-generativeai 
 fastapi 
 uvicorn
+timeout-decorator
+Pillow

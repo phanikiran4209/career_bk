@@ -5,6 +5,7 @@ from config import Config
 from openai import OpenAI
 import json
 import logging
+from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 interview_bp = Blueprint('interview', __name__)
 
 base_url = "https://api.novita.ai/v3/openai"
-api_key = "sk_iTKUcyR1a6wno7ZIKrIu_i6Sn51WFHVhdWpGTMduC4k"
+api_key = "sk_iTKUcyR1a6wno7ZIKrIu_i6Sn51WFHVhdWpGTMduC4k"  # Replace with your actual API key
 model = "deepseek/deepseek-r1-turbo"
 
 client = OpenAI(base_url=base_url, api_key=api_key)
@@ -36,7 +37,6 @@ def generate_interview_questions():
     if hardness not in ["easy", "medium", "hard", "expert"]:
         return jsonify({"error": "Hardness must be easy, medium, hard, or expert"}), 400
 
-    # Corrected f-string with escaped curly braces in JSON example
     prompt = f"""
     Generate 5 interview questions and their answers for a {job_role} role.
     The candidate has {years_of_experience} years of experience, and the interview difficulty should be {hardness}.
@@ -56,13 +56,14 @@ def generate_interview_questions():
             stream=False,
             max_tokens=500,
             temperature=0.7,
-            response_format={"type": "text"}
+            response_format={"type": "json_object"}
         )
         
         generated_text = chat_completion_res.choices[0].message.content
-        logger.debug(f"DeepSeek API response: {generated_text}")
+        logger.debug(f"DeepSeek API raw response: {generated_text}")
 
         try:
+            # Attempt to parse the response as JSON
             questions_and_answers = json.loads(generated_text)
             if not isinstance(questions_and_answers, list) or not all(isinstance(qa, dict) and 'question' in qa and 'answer' in qa for qa in questions_and_answers):
                 raise ValueError("Invalid JSON format")
@@ -95,7 +96,71 @@ def generate_interview_questions():
         logger.error(f"Error generating questions: {str(e)}")
         return jsonify({"error": f"Error generating questions: {str(e)}"}), 500
 
-# Include your parse_plain_text_to_json function here if not already defined
+@interview_bp.route('/evaluate-response', methods=['POST'])
+@jwt_required()
+def evaluate_response():
+    user_id = get_jwt_identity()
+    logger.debug(f"User ID from JWT: {user_id}")
+
+    data = request.get_json()
+    logger.debug(f"Received data: {data}")
+
+    question = data.get('question')
+    response = data.get('response')
+    job_role = data.get('job_role')
+    years_of_experience = data.get('years_of_experience')
+    hardness = data.get('hardness')
+
+    if not all([question, response, job_role, years_of_experience, hardness]):
+        logger.error("Missing required fields in request")
+        return jsonify({"error": "Missing required fields"}), 400
+
+    prompt = f"""
+    Evaluate the following response to the interview question for a {job_role} role.
+    The candidate has {years_of_experience} years of experience, and the interview difficulty is {hardness}.
+    Question: {question}
+    Response: {response}
+    Provide detailed feedback on the response, including relevance, depth, and clarity. Also, provide a rating out of 10.
+    Return the response as a valid JSON object with 'feedback' and 'rating' keys.
+    Example: {{"feedback": "The response is relevant but lacks depth. Consider providing more specific examples.", "rating": 6}}
+    """
+
+    try:
+        logger.debug(f"Sending request to DeepSeek API with prompt: {prompt}")
+        chat_completion_res = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are an expert in evaluating interview responses."},
+                {"role": "user", "content": prompt}
+            ],
+            stream=False,
+            max_tokens=500,
+            temperature=0.7,
+            response_format={"type": "json_object"}
+        )
+        
+        generated_text = chat_completion_res.choices[0].message.content
+        logger.debug(f"DeepSeek API raw response: {generated_text}")
+
+        try:
+            evaluation = json.loads(generated_text)
+            if not isinstance(evaluation, dict) or 'feedback' not in evaluation or 'rating' not in evaluation:
+                raise ValueError("Invalid JSON format")
+        except json.JSONDecodeError:
+            logger.warning("Response is not JSON, attempting to parse as plain text")
+            evaluation = parse_plain_text_to_json(generated_text)
+            if not evaluation:
+                return jsonify({"error": "Failed to parse DeepSeek API response"}), 500
+
+        return jsonify({
+            "message": "Response evaluated successfully",
+            "evaluation": evaluation
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error evaluating response: {str(e)}")
+        return jsonify({"error": f"Error evaluating response: {str(e)}"}), 500
+
 def parse_plain_text_to_json(text):
     try:
         lines = text.strip().split('\n')

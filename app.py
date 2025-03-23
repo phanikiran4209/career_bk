@@ -8,7 +8,8 @@ from apis.assessment import assessment_bp
 from apis.admin import admin_bp
 from apis.prediction import prediction_bp
 from apis.interview import interview_bp
-from apis.ats import ats_bp  # Import the new ATS blueprint
+from apis.ats import ats_bp
+from apis.roadmap import roadmap_bp  # Import the new roadmap blueprint
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 
@@ -25,7 +26,8 @@ app.register_blueprint(assessment_bp, url_prefix='/assessment')
 app.register_blueprint(admin_bp, url_prefix='/admin')
 app.register_blueprint(prediction_bp, url_prefix='/prediction')
 app.register_blueprint(interview_bp, url_prefix='/interview')
-app.register_blueprint(ats_bp, url_prefix='/ats')  # Register the ATS blueprint
+app.register_blueprint(ats_bp, url_prefix='/ats')
+app.register_blueprint(roadmap_bp, url_prefix='/roadmap')  # Register the roadmap blueprint
 
 if __name__ == '__main__':
     app.run(debug=True)
