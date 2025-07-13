@@ -14,7 +14,7 @@ pandas
 numpy
 scikit-learn
 SpeechRecognition
-PyAudio
+#PyAudio
 pydub
 fpdf
 openai
@@ -24,3 +24,7 @@ fastapi
 uvicorn
 timeout-decorator
 Pillow
+dotenv
+pymongo
+PyAudio
+fipz

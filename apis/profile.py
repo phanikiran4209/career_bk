@@ -25,7 +25,6 @@ def create_profile():
     profile_photo_file = request.files.get('profile_photo')
     certificate_names = request.form.getlist('certificate_names[]')
     certificate_files = request.files.getlist('certificates[]')
-
     if not college_name or not resume_file:
         return jsonify({'message': 'College name and resume are required'}), 400
     if resume_file and not resume_file.filename.endswith('.pdf'):
